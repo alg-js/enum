@@ -40,9 +40,13 @@ export function chain(...iterables) {
     return result;
 }
 
-export function chunk(iterable, size) {
-    if (size === 0) {
-        throw new Error("Cannot yield chunks of size 0");
+export function chunk(
+    iterable,
+    size,
+    {strategy = "dropEnd", fillValue = undefined} = {}
+) {
+    if (size <= 0) {
+        throw new Error("Cannot yield chunks of size <= 0");
     }
     const result = [];
     let current = [];
@@ -52,6 +56,14 @@ export function chunk(iterable, size) {
             result.push(current);
             current = [];
         }
+    }
+    if (strategy === "keepEnd" && current.length !== 0) {
+        result.push(current);
+    } else if (strategy === "padEnd" && current.length !== 0) {
+        current.length = size;
+        result.push(Array.from(current, (e) => e ?? fillValue))
+    } else if (strategy === "strict" && current.length !== 0) {
+        throw Error("Incomplete chunk");
     }
     return result;
 }
@@ -239,8 +251,31 @@ export function window(iterable, size) {
     return result;
 }
 
-export function zip(...iterables) {
-    iterables = iterables.map(iter);
+export function zip(...args) {
+    let options;
+    let iterables;
+    const last = args.at(-1);
+    if (typeof last === "object" && last !== null && "strategy" in last) {
+        options = last;
+        iterables = args.slice(0, -1).map(iter);
+    } else {
+        options = {strategy: "shortest"};
+        iterables = args.map(iter);
+    }
+    switch (options["strategy"]) {
+        case "shortest":
+            return zipShortest(iterables);
+        case "longest":
+            return zipLongest(iterables, options["fillValue"]);
+        case "strict":
+            return zipStrict(iterables);
+        default:
+            throw Error(`Unrecognised strategy: "${options}"`);
+    }
+}
+
+
+function zipShortest(iterables) {
     const result = [];
     while (true) {
         const batch = [];
@@ -252,5 +287,52 @@ export function zip(...iterables) {
             batch.push(next.value);
         }
         result.push(batch);
+    }
+}
+
+function zipLongest(iterables, fillValue) {
+    const result = []
+    while (true) {
+        const batch = [];
+        let done = 0;
+        for (const iter of iterables) {
+            const next = iter.next();
+            if (next.done) {
+                batch.push(fillValue);
+                done += 1;
+            } else {
+                batch.push(next.value);
+            }
+        }
+        if (done === iterables.length) {
+            return result;
+        } else {
+            result.push(batch);
+        }
+    }
+}
+
+function zipStrict(iterables) {
+    const result = []
+    while (true) {
+        const batch = [];
+        let done = 0;
+        for (const iter of iterables) {
+            const next = iter.next();
+            if (next.done) {
+                done += 1;
+            } else {
+                batch.push(next.value);
+            }
+        }
+        if (done === 0) {
+            result.push(batch);
+        } else if (done === iterables.length) {
+            return result;
+        } else {
+            throw Error(
+                "Zipped iterables of unequal length with strategy = strict",
+            );
+        }
     }
 }

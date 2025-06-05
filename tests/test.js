@@ -28,7 +28,6 @@ import {
     toObjects,
     unwrap,
 } from "./utils.js";
-import {scan} from "../src/main.js";
 
 
 Deno.test({
@@ -138,15 +137,64 @@ Deno.test({
 
 Deno.test({
     name: "Chunk discards leftovers",
-    fn: () => assertEquals(
-        Enum.chunk(alph(8), 3),
-        [["a", "b", "c"], ["d", "e", "f"]],
-    ),
+    fn: () => {
+        assertEquals(
+            Enum.chunk(alph(8), 3),
+            [["a", "b", "c"], ["d", "e", "f"]],
+        );
+        assertEquals(
+            Enum.chunk(alph(8), 3, {strategy: "dropEnd"}),
+            [["a", "b", "c"], ["d", "e", "f"]],
+        );
+    },
 });
 
 Deno.test({
-    name: "Chunk throws on 0 chunk size",
-    fn: () => assertThrows(() => Enum.chunk([], 0).next()),
+    name: "Chunk pads leftovers",
+    fn: () => {
+        assertEquals(
+            Enum.chunk(alph(8), 3, {strategy: "padEnd"}),
+            [["a", "b", "c"], ["d", "e", "f"], ["g", "h", undefined]],
+        );
+        assertEquals(
+            Enum.chunk(alph(9), 3, {strategy: "padEnd"}),
+            [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]],
+        );
+        assertEquals(
+            Enum.chunk(alph(8), 3, {strategy: "padEnd", fillValue: "X"}),
+            [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "X"]],
+        );
+    },
+});
+
+Deno.test({
+    name: "Chunk keeps leftovers with `keepEnd`",
+    fn: () => {
+        assertEquals(
+            Enum.chunk(alph(10), 3, {strategy: "keepEnd"}),
+            [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"], ["j"]],
+        );
+        assertEquals(
+            Enum.chunk(alph(8), 3, {strategy: "keepEnd"}),
+            [["a", "b", "c"], ["d", "e", "f"], ["g", "h"]],
+        );
+    },
+});
+
+Deno.test({
+    name: "Chunk throws with `strict`",
+    fn: () => {
+        assertThrows(() => Enum.chunk(alph(10), 3, {strategy: "strict"}));
+        assertThrows(() => Enum.chunk(alph(8), 3, {strategy: "strict"}));
+    },
+});
+
+Deno.test({
+    name: "Chunk throws on <= 0 chunk size",
+    fn: () => {
+        assertThrows(() => Enum.chunk([], 0));
+        assertThrows(() => Enum.chunk([], -1));
+    },
 });
 
 Deno.test({
@@ -161,7 +209,9 @@ Deno.test({
 
 Deno.test({
     name: "Consume consumes empty iterables",
-    fn: () => {Enum.consume([])},
+    fn: () => {
+        Enum.consume([]);
+    },
 });
 
 Deno.test({
@@ -688,10 +738,55 @@ Deno.test({
 
 Deno.test({
     name: "Zip stops on the shortest iterator",
+    fn: () => {
+        assertEquals(
+            Enum.zip(alph(4), num(3)),
+            [["a", 0], ["b", 1], ["c", 2]],
+        )
+        assertEquals(
+            Enum.zip(alph(4), num(3), {strategy: "shortest"}),
+            [["a", 0], ["b", 1], ["c", 2]],
+        )
+    },
+});
+
+Deno.test({
+    name: "Zip stops on the longest iterator with strategy longest",
+    fn: () => {
+        assertEquals(
+            Enum.zip(alph(4), num(3), {strategy: "longest"}),
+            [["a", 0], ["b", 1], ["c", 2], ["d", undefined]],
+        );
+        assertEquals(
+            Enum.zip(alph(4), num(3), {
+                strategy: "longest",
+                fillValue: "foo",
+            }),
+            [["a", 0], ["b", 1], ["c", 2], ["d", "foo"]],
+        );
+    },
+});
+
+Deno.test({
+    name: "Zip throws on uneven iterators with strategy strict",
+    fn: () => {
+        assertThrows(() => Enum.zip(alph(4), num(3), {strategy: "strict"}));
+    },
+});
+
+Deno.test({
+    name: "Zip yields even iterators with strategy strict",
     fn: () => assertEquals(
-        Enum.zip(alph(4), num(3)),
+        Enum.zip(alph(3), num(3), {strategy: "strict"}),
         [["a", 0], ["b", 1], ["c", 2]],
     ),
+});
+
+Deno.test({
+    name: "Zip throws on unrecognised strategy",
+    fn: () => {
+        assertThrows(() => Enum.zip(alph(4), num(3), {strategy: "foo"}));
+    },
 });
 
 Deno.test({

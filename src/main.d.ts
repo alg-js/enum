@@ -13,31 +13,13 @@
  * limitations under the License.
  */
 
-
-/**
- * A function that returns a truthy or falsy value
- */
-export type Predicate<T> = (e: T, i?: number) => boolean;
-/**
- * A function that maps the given value
- */
-export type Mapping<T, R> = (e: T, i?: number) => R;
-/**
- * A function that performs some operation and returns nothing
- */
-export type Consumer<T> = (e: T, i?: number) => void;
-/**
- * A function that updates the given value
- */
-export type Update<T> = (e: T, i?: number) => T;
-/**
- * A function that accumulates values
- */
-export type Folder<T, R> = (acc: R, e: T, i?: number) => R;
-/**
- * A function that accumulates values
- */
-export type Reducer<T> = (acc: T, e: T, i?: number) => T;
+import type {
+    Consumer,
+    Folder,
+    Mapping,
+    Predicate,
+    Reducer,
+} from "./types.d.ts";
 
 /**
  * Returns ture if all items in the iterable satisfy the predicate.
@@ -54,8 +36,8 @@ export type Reducer<T> = (acc: T, e: T, i?: number) => T;
  * @param {Predicate<T>} predicate A predicate
  */
 export function all<T>(
-  iterable: Iterable<T>,
-  predicate: Predicate<T>,
+    iterable: Iterable<T>,
+    predicate: Predicate<T>,
 ): boolean;
 
 /**
@@ -73,8 +55,8 @@ export function all<T>(
  * @param {Predicate<T>} predicate A predicate
  */
 export function any<T>(
-  iterable: Iterable<T>,
-  predicate: Predicate<T>,
+    iterable: Iterable<T>,
+    predicate: Predicate<T>,
 ): boolean;
 
 /**
@@ -91,28 +73,63 @@ export function any<T>(
  * @returns {T[]} The values from the given iterables chained together
  */
 export function chain<T>(
-  ...iterables: Iterable<T>[]
+    ...iterables: Iterable<T>[]
 ): T[];
 
 /**
- * Splits the given iterable into arrays of the given size. Drops any dangling
- * elements.
+ * Splits the given iterable into arrays of the given size.
  *
- * @example
+ * There are four strategies to deal with unfilled chunks at the end of the
+ * given iterable:
+ * - `dropEnd` (default): If the last chunk has fewer than `size` items, it
+ * is dropped
+ * - `keepEnd`: If the last chunk has fewer than `size` items, it is yielded
+ * as is
+ * - `padEnd`: If the last chunk has fewer than `size` items, it is padded with
+ * the given `fillValue` (`undefined` by default)
+ * - `strict`: If the last chunk has fewer than `size` items an error is thrown
+ *
+ * @example default / drop end
  * ```javascript
- * console.log(Enum.chunk([1, 2, 3, 4, 5], 2));  // [[1, 2] [3, 4]]
+ * console.log(Enum.chunk([1, 2, 3, 4, 5], 2));  // [[1, 2], [3, 4]]
+ * ```
+ * @example keep end
+ * ```javascript
+ * const chunks = Enum.chunk([1, 2, 3, 4, 5], 2, {strategy: "keepEnd"});
+ * console.log(chunks);  // [[1, 2], [3, 4], [5]]
+ * ```
+ * @example pad end
+ * ```javascript
+ * const data = [1, 2, 3, 4, 5]
+ * const chunks = Enum.chunk(data, 2, {strategy: "padEnd", fillValue: 999});
+ * console.log(chunks);  // [[1, 2], [3, 4], [5, 999]]
+ * ```
+ * @example strict
+ * ```javascript
+ * try {
+ *     const chunks = Enum.chunk([1, 2, 3, 4, 5], 2, {strategy: "strict"});
+ *     console.log(chunks);
+ * } catch (e) {
+ *     console.log(e.toString());  // Error: Incomplete chunk
+ * }
  * ```
  *
  * @template T
  * @param {Iterable<T>} iterable An iterable
  * @param {number} size The size of the chunk window
+ * @param {Object} options
+ * @param {"dropEnd" | "keepEnd" | "padEnd" | "strict"} options.strategy
+ * @param {T} options.fillValue
  * @returns {T[][]} Chunks of the given size
  */
 export function chunk<T>(
-  iterable: Iterable<T>,
-  size: number,
+    iterable: Iterable<T>,
+    size: number,
+    options?: {
+        strategy: "dropEnd" | "keepEnd" | "padEnd" | "strict";
+        fillValue?: T;
+    },
 ): T[][];
-
 
 /**
  * Consumes the given iterable
@@ -128,7 +145,7 @@ export function chunk<T>(
  * @param {Iterable<T>} iterable An iterable
  */
 export function consume<T>(
-  iterable: Iterable<T>,
+    iterable: Iterable<T>,
 ): void;
 
 /**
@@ -235,8 +252,8 @@ export function filter<T>(
  * @returns {T} the first item matching the given condition
  */
 export function find<T>(
-  iterable: Iterable<T>,
-  predicate: Predicate<T>,
+    iterable: Iterable<T>,
+    predicate: Predicate<T>,
 ): T;
 
 /**
@@ -255,8 +272,8 @@ export function find<T>(
  * @returns {number}
  */
 export function findIndex<T>(
-  iterable: Iterable<T>,
-  predicate: Predicate<T>,
+    iterable: Iterable<T>,
+    predicate: Predicate<T>,
 ): number;
 
 /**
@@ -353,8 +370,8 @@ export function map<T, R>(
  * @returns {T}
  */
 export function reduce<T>(
-  iterable: Iterable<T>,
-  reducer: Reducer<T>,
+    iterable: Iterable<T>,
+    reducer: Reducer<T>,
 ): T;
 
 /**
@@ -374,9 +391,9 @@ export function reduce<T>(
  * @param {R} initial An initial value
  */
 export function reduce<T, R>(
-  iterable: Iterable<T>,
-  reducer: Folder<T, R>,
-  initial: R,
+    iterable: Iterable<T>,
+    reducer: Folder<T, R>,
+    initial: R,
 ): R;
 
 /**
@@ -398,7 +415,6 @@ export function repeat<T>(
     times: number,
 ): T[];
 
-
 /**
  * Reverses the given iterable
  *
@@ -413,7 +429,7 @@ export function repeat<T>(
  * @returns T[]
  */
 export function reverse<T>(
-    iterable: Iterable<T>
+    iterable: Iterable<T>,
 ): T[];
 
 /**
@@ -518,7 +534,7 @@ export function takeWhile<T>(
 export function window<T>(
     iterable: Iterable<T>,
     size: number,
-):T[][];
+): T[][];
 
 /**
  * Zips the given iterables. Stops once the shortest iterable has been consumed.
@@ -537,6 +553,65 @@ export function window<T>(
  * @param {Iterable<T>[]} iterables
  * @returns {T[][]}
  */
-export function zip<T>(
-    ...iterables: Iterable<T>[]
-): T[][];
+export function zip(
+    ...iterables: Iterable<unknown>[]
+): unknown[][];
+
+/**
+ * Zips the given iterables with the given zipping strategy.
+ *
+ * The strategy can be one of:
+ * - `shortest`: stops when the shortest iterable has been consumed
+ * - `longest`: continues yielding elements until all iterables have been
+ * consumed. A `fillValue` can be provided to be used as the default value for
+ * consumed iterables. By default, `fillValue is undefined`
+ * - `strict`: throws if any iterables are of uneven length
+ *
+ * @example shortest
+ * ```javascript
+ * const nums = [0, 1, 2, 3, 4];
+ * const alph = "abcd";
+ * const foos = ["foo", "bar", "baz"];
+ *
+ * console.log(Enum.zip(nums, alph, foos, {strategy: "shortest"}));
+ * // [[0, "a", "foo"], [1, "b", "bar"], [2, "c", "baz"]]
+ * ```
+ *
+ * @example longest
+ * ```javascript
+ * const nums = [0, 1, 2, 3];
+ * const alph = "abc";
+ * const foos = ["foo", "bar"];
+ *
+ * const zipped = Enum.zip(
+ *     nums, alph, foos,
+ *     {strategy: "longest", fillValue: "X"},
+ * );
+ * console.log(zipped);
+ * // [[0, "a", "foo"], [1, "b", "bar"], [2, "c", "X"], [3, "X", "X"]]
+ * ```
+ *
+ * @example strict
+ * ```javascript
+ * const nums = [0, 1, 2, 3, 4];
+ * const alph = "abcd";
+ * const foos = ["foo", "bar", "baz"];
+ *
+ * try {
+ *     const zipped = Enum.zip(nums, alph, foos, {strategy: "strict"});
+ *     console.log(zipped);
+ * } catch (e) {
+ *     // Error: Zipped iterables of unequal length with strategy = strict
+ *     console.log(e.toString());
+ * }
+ * ```
+ */
+export function zip(
+    ...args: [
+        ...Iterable<unknown>[],
+        {
+            strategy: "shortest" | "longest" | "strict";
+            fillValue?: unknown;
+        },
+    ]
+): unknown[][];
