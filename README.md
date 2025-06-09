@@ -1,7 +1,7 @@
 # @alg/enum
 
 [![JSR](https://jsr.io/badges/@alg/enum)](https://jsr.io/@alg/enum)
-[![License](https://img.shields.io/badge/Apache--2.0-green?label=license)](https://github.com/alg-js/enum/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/Apache--2.0-green?label=license)](https://codeberg.org/algjs/enum/src/branch/main/LICENSE)
 
 Eager functions for Iterables.
 
